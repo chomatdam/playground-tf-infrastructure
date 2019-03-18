@@ -11,6 +11,20 @@ provider "aws" {
   version = "~> 2.1"
 }
 
-resource "aws_route53_zone" "main" {
-  name = "chomat.de"
+locals {
+  owner = "letslearn"
+}
+
+module "network_tools" {
+  source = "base"
+
+  vpc_cidr_block   = "172.20.0.0/16"
+  subnets_number   = "2"
+  with_internet_gw = true
+
+  tags = {
+    Owner       = "${local.owner}"
+    Environment = "${terraform.workspace}"
+    Application = "Tools"
+  }
 }

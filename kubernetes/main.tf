@@ -25,14 +25,14 @@ module "eks_cluster" {
   vpc_cidr_block = "172.30.0.0/16"
   subnets_number = "2"
 
-  worker_node_key_pair = "frankfurt-kitchen"
+  worker_node_key_pair      = "frankfurt-kitchen"
   worker_node_instance_type = "t3.small"
   worker_node_min_number    = "1"
   worker_node_max_number    = "3"
 
   common_tags = {
-    Owner = "${local.owner}",
-    Environment ="${terraform.workspace}"
+    Owner       = "${local.owner}"
+    Environment = "${terraform.workspace}"
   }
 }
 

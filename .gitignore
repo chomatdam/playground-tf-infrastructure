@@ -2,3 +2,4 @@
 .terraform
 kubernetes/config/config
 kubernetes/config/config_map_aws_auth.yaml
+*.pem
