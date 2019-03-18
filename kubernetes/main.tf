@@ -26,14 +26,14 @@ module "eks_cluster" {
   subnets_number = "2"
 
   worker_node_key_pair = "frankfurt-kitchen"
-  worker_node_instance_type = "t3.medium"
+  worker_node_instance_type = "t3.small"
   worker_node_min_number    = "1"
   worker_node_max_number    = "3"
 
-  common_tags = "${map(
-    "Owner", "${local.owner}",
-    "Environment", "${terraform.workspace}"
-)}"
+  common_tags = {
+    Owner = "${local.owner}",
+    Environment ="${terraform.workspace}"
+  }
 }
 
 data "template_file" "kubeconfig_template" {

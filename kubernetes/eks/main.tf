@@ -44,6 +44,7 @@ resource "aws_launch_configuration" "alc" {
   security_groups             = ["${aws_security_group.worker_node_sg.id}"]
   user_data_base64            = "${base64encode(local.node-userdata)}"
   key_name                    = "${var.worker_node_key_pair}"
+  spot_price                  = "0.015"
 
   lifecycle {
     create_before_destroy = true
