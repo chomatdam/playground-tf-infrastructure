@@ -34,10 +34,10 @@ variable "consul_version" {
 # Way for consul instances to discover each other (part to improve)
 variable "consul_node_tag_key" {
   default = "Name"
-  type = "string"
-}
-variable "consul_node_tag_value" {
-  default = "cluster-node"
-  type = "string"
+  type    = "string"
 }
 
+variable "consul_node_tag_value" {
+  default = "cluster-node"
+  type    = "string"
+}

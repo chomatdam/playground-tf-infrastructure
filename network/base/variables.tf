@@ -1,5 +1,5 @@
 variable "extra_tags" {
-  type = "map"
+  type    = "map"
   default = {}
 }
 
@@ -21,5 +21,5 @@ variable "avaibility_zones_number" {
 
 variable "db_subnet_enabled" {
   default = true
-  type = "string"
+  type    = "string"
 }

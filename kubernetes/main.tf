@@ -15,6 +15,11 @@ locals {
   owner = "letslearn"
 }
 
+resource "aws_s3_bucket" "s3_certificates_k8s" {
+  bucket = "${local.owner}-certificates-k8s" // TODO: not used yet - place to push the kubeconfig
+  acl    = "private"
+}
+
 module "eks_cluster" {
   source = "eks"
 

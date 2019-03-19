@@ -12,10 +12,15 @@ provider "aws" {
 }
 
 // Resources
+resource "aws_s3_bucket" "s3_certificates_consul" {
+  bucket = "letslearn-certificates-consul" // TODO: not used yet - iteration 2 for encryption
+  acl    = "private"
+}
+
 module "consul_cluster" {
   source = "./base"
 
-  key_name = "frankfurt-kitchen"
+  key_name       = "frankfurt-kitchen"
   consul_version = "1.4.3"
 
   node_instance_type = "t3.small"

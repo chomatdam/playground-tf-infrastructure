@@ -42,11 +42,11 @@ data "template_file" "consul_script" {
   template = "${file("${path.module}/files/consul-node.sh")}"
 
   vars {
-    asgname = "${var.asg_name}"
-    region  = "${data.aws_region.current.name}"
-    size    = "${var.min_size}"
+    asgname        = "${var.asg_name}"
+    region         = "${data.aws_region.current.name}"
+    size           = "${var.min_size}"
     consul_version = "${var.consul_version}"
-    node_tag_key = "${var.consul_node_tag_key}"
+    node_tag_key   = "${var.consul_node_tag_key}"
     node_tag_value = "${var.consul_node_tag_value}"
   }
 }
@@ -96,12 +96,12 @@ resource "aws_lb_listener" "consul_lb_listener" {
 }
 
 resource "aws_launch_configuration" "consul_cluster_lc" {
-  name_prefix          = "consul-node-"
-  image_id             = "${data.aws_ami.amazon_linux.image_id}"
-  instance_type        = "${var.node_instance_type}"
-  user_data     = "${data.template_cloudinit_config.consul_instance_data.rendered}"
-  iam_instance_profile = "${aws_iam_instance_profile.consul_instance_profile.id}"
-  associate_public_ip_address = true // optional, managed at subnet level
+  name_prefix                 = "consul-node-"
+  image_id                    = "${data.aws_ami.amazon_linux.image_id}"
+  instance_type               = "${var.node_instance_type}"
+  user_data                   = "${data.template_cloudinit_config.consul_instance_data.rendered}"
+  iam_instance_profile        = "${aws_iam_instance_profile.consul_instance_profile.id}"
+  associate_public_ip_address = true                                                              // optional, managed at subnet level
 
   security_groups = [
     "${aws_security_group.consul-cluster-vpc.id}",
@@ -123,7 +123,7 @@ resource "aws_autoscaling_group" "consul_cluster_asg" {
   min_size             = "${var.min_size}"
   max_size             = "${var.max_size}"
   vpc_zone_identifier  = ["${var.public_subnet_ids}"]
-  target_group_arns = [ "${aws_lb_target_group.consul_lb_tg.arn}" ]
+  target_group_arns    = ["${aws_lb_target_group.consul_lb_tg.arn}"]
 
   lifecycle {
     create_before_destroy = true

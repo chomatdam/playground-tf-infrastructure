@@ -39,7 +39,7 @@ variable "dns_names" {
 variable "ip_addresses" {
   description = "List of IP addresses for which the certificate will be valid (e.g. 127.0.0.1)."
   type        = "list"
-  default = []
+  default     = []
 }
 
 variable "validity_period_hours" {

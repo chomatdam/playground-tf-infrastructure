@@ -3,9 +3,7 @@
 set -x
 exec > /var/log/user-data.log 2>&1
 
-# A few variables we will refer to later...
-ASG_NAME="${asgname}"
-REGION="${region}"
+# Shell variables
 EXPECTED_SIZE="${size}"
 CONSUL_VERSION="${consul_version}"
 TAG_KEY="${node_tag_key}"
