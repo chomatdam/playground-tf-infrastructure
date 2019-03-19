@@ -12,25 +12,19 @@ data "terraform_remote_state" "consul_state" {
   }
 }
 
-data "terraform_remote_state" "vault_s3_state" {
-  backend = "s3"
-
-  config {
-    bucket = "letslearn-terraform"
-    key    = "vault/s3/state"
-    region = "eu-central-1"
-  }
-}
-
 data "template_file" "user_data_vault_cluster" {
   template = "${file("${path.module}/user-data-vault.sh")}"
 
   vars {
+    aws_region = "${data.aws_region.current.name}"
+    kms_key_id = "${aws_kms_alias.master_key_alias.target_key_id}}"
+    kms_endpoint = "https://kms.${data.aws_region.current}.amazonaws.com"
+
+    consul_version = "${var.consul_version}"
     consul_cluster_tag_key   = "${data.terraform_remote_state.consul_state.outputs.consul_cluster_tag_key}"
     consul_cluster_tag_value = "${data.terraform_remote_state.consul_state.outputs.consul_cluster_tag_value}"
 
-    kms_key_id = "${data.terraform_remote_state.vault_s3_state.outputs.kms_master_key_id}}"
-    aws_region = "${data.aws_region.current.name}"
+    vault_version = "${var.vault_version}"
   }
 }
 

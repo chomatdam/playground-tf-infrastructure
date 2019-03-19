@@ -25,3 +25,11 @@ variable "instance_type" {
 variable "key_name" {
   type = "string"
 }
+
+variable "consul_version" {
+  type = "string"
+}
+
+variable "vault_version" {
+  type = "string"
+}

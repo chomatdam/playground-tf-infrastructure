@@ -23,7 +23,7 @@ echo "Instance IP is: $IP"
 
 # Start the Consul server.
 docker run -d --net=host \
-    --name=consul \
+    --name=consul-server \
     consul:$CONSUL_VERSION agent -server -ui \
     -bind=$IP \
     -client="0.0.0.0" \

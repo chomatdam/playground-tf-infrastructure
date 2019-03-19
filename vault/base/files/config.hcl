@@ -1,14 +1,21 @@
+listener "tcp" {
+  address          = "0.0.0.0:8200"
+  cluster_address  = "0.0.0.0:8201"
+  tls_disable      = "true"
+}
+
 storage "consul" {
   address = "127.0.0.1:8500"
-  path    = "vault"
+  path    = "vault/"
 }
 
-listener "tcp" {
-  address     = "127.0.0.1:8200"
-  tls_disable = 1
+seal "awskms" {
+  region = "us-east-1"
+  kms_key_id = "d7c1ffd9-8cce-45e7-be4a-bb38dd205966"
 }
 
-telemetry {
-  statsite_address = "127.0.0.1:8125"
-  disable_hostname = true
-}
+ui=true
+
+api_addr =  "$API_ADDR"    // TODO: should be  http://$EC2_IP:8200
+
+cluster_addr = "$CLUSTER_ADDR"  //

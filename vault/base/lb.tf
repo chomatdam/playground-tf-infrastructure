@@ -13,7 +13,7 @@ resource "aws_lb" "vault_lb" {
 }
 
 resource "aws_lb_target_group" "vault_lb_tg" {
-  name        = "consul-lb-tg"
+  name        = "vault-lb-tg"
   port        = 8500
   protocol    = "HTTP"
   vpc_id      = "${var.vpc_id}"
@@ -30,7 +30,7 @@ resource "aws_lb_target_group" "vault_lb_tg" {
   // TODO: tags
 }
 
-resource "aws_lb_listener" "consul_lb_listener" {
+resource "aws_lb_listener" "vault_lb_listener" {
   load_balancer_arn = "${aws_lb.vault_lb.arn}"
   protocol          = "HTTP"
   port              = 80

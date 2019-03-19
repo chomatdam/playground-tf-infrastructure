@@ -5,6 +5,7 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
 # Shell variables
 CONSUL_VERSION="${consul_version}"
+VAULT_VERSION="${vault_version}"
 
 # Update the packages.
 sudo yum update -y
@@ -22,7 +23,7 @@ readonly VAULT_CONFIG="/opt/vault/config.hcl"
 
 # Start the Consul server.
 docker run -d --net=host \
-    --name=consul \
+    --name=consul-client \
     consul:$CONSUL_VERSION agent \
     --client \
     --cluster-tag-key "${consul_cluster_tag_key}" \
@@ -30,8 +31,10 @@ docker run -d --net=host \
 
 # TODO: VAULT_CONFIG to upload - check options available, enable and mount volume for certificates or disable TLS
 docker run --cap-add=IPC_LOCK \
+        --name=vault-server \
         -e 'VAULT_LOCAL_CONFIG={"backend": {"file": {"path": "$$VAULT_CONFIG"}}, "default_lease_ttl": "168h", "max_lease_ttl": "720h"}' \
-        vault server \
+        vault:$VAULT_VERSION \
+        server \
         --enable-auto-unseal \
         --auto-unseal-kms-key-id "${kms_key_id}" \
         --auto-unseal-kms-key-region "${aws_region}" \

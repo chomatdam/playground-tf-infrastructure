@@ -23,6 +23,9 @@ module "vault_cluster" {
 
   vpc_id     = "${data.aws_vpc.vault_vpc.id}"
   subnet_ids = "${data.aws_subnet_ids.vault_public_subnet_ids.ids}"
+
+  consul_version = "1.3.4"
+  vault_version = "1.0.3"
 }
 
 // Data
