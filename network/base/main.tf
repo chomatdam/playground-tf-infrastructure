@@ -1,29 +1,69 @@
 data "aws_availability_zones" "available" {}
 
+locals {
+  common_tags = {
+    Owner = "${var.owner}",
+    Environment = "${terraform.workspace}"
+  }
+}
+
 resource "aws_vpc" "vpc" {
   cidr_block = "${var.vpc_cidr_block}"
 
-  tags = "${var.tags}"
-}
+  enable_dns_support = "true"
+  enable_dns_hostnames = "true"
 
-resource "aws_subnet" "subnet" {
-  count             = "${var.subnets_number}"
-  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
-  cidr_block        = "${cidrsubnet(var.vpc_cidr_block, 4, count.index)}"           # 20(subnet) - 16(vpc) = 4,  2^4 = 16 subnets max / remaining: 2^12 = 4094 hosts per subnet
-  vpc_id            = "${aws_vpc.vpc.id}"
-
-  tags = "${var.tags}"
+  tags = "${merge(local.common_tags, var.extra_tags, map("Name", "${var.vpc_name}"))}"
 }
 
 resource "aws_internet_gateway" "internet_gw" {
-  count  = "${var.with_internet_gw}"
   vpc_id = "${aws_vpc.vpc.id}"
 
-  tags = "${var.tags}"
+  tags = "${merge(local.common_tags, var.extra_tags)}"
+}
+
+# cidrsubnet: 20(subnet) - 16(vpc) = 4,  2^4 = 16 subnets max / remaining: 2^12 = 4094 hosts per subnet
+resource "aws_subnet" "public" {
+  count             = "${var.avaibility_zones_number}"
+  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
+  cidr_block        = "${cidrsubnet(var.vpc_cidr_block, 4, count.index)}"
+  vpc_id            = "${aws_vpc.vpc.id}"
+  map_public_ip_on_launch = true
+
+  tags = "${merge(local.common_tags, var.extra_tags, map(
+  "Name", join("-", list(var.vpc_name, terraform.workspace, "public")),
+  "Type", "public"
+  ))}"
+}
+
+resource "aws_subnet" "app" {
+  count             = "${var.avaibility_zones_number}"
+  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
+  cidr_block        = "${cidrsubnet(var.vpc_cidr_block, 4, (1 * var.avaibility_zones_number) + count.index)}"
+  vpc_id            = "${aws_vpc.vpc.id}"
+  map_public_ip_on_launch = false
+
+  tags = "${merge(local.common_tags, var.extra_tags, map(
+  "Name", join("-", list(var.vpc_name, terraform.workspace, "app")),
+  "Type", "app"
+  ))}"
+}
+
+resource "aws_subnet" "db" {
+  count             = "${var.db_subnet_enabled ? var.avaibility_zones_number : 0}"
+  availability_zone = "${data.aws_availability_zones.available.names[count.index]}"
+  cidr_block        = "${cidrsubnet(var.vpc_cidr_block, 4, (2 * var.avaibility_zones_number) + count.index)}"
+  vpc_id            = "${aws_vpc.vpc.id}"
+  map_public_ip_on_launch = false
+
+
+  tags = "${merge(local.common_tags, var.extra_tags, map(
+  "Name", join("-", list(var.vpc_name, terraform.workspace, "db")),
+  "Type", "db"
+  ))}"
 }
 
 resource "aws_route_table" "all_trafic_route_table" {
-  count  = "${var.with_internet_gw}"
   vpc_id = "${aws_vpc.vpc.id}"
 
   route {
@@ -32,8 +72,8 @@ resource "aws_route_table" "all_trafic_route_table" {
   }
 }
 
-resource "aws_route_table_association" "subnet_route_association" {
-  count          = "${var.with_internet_gw ? var.subnets_number : 0}"
-  subnet_id      = "${aws_subnet.subnet.*.id[count.index]}"
+resource "aws_route_table_association" "public_subnet_route_association" {
+  count = "${length(aws_subnet.public.*.id)}"
+  subnet_id      = "${aws_subnet.public.*.id[count.index]}"
   route_table_id = "${aws_route_table.all_trafic_route_table.id}"
 }

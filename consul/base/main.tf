@@ -1,140 +1,143 @@
-# ---------------------------------------------------------------------------------------------------------------------
-# DEPLOY A CONSUL CLUSTER IN AWS
-# These templates show an example of how to use the consul-cluster module to deploy Consul in AWS. We deploy two Auto
-# Scaling Groups (ASGs): one with a small number of Consul server nodes and one with a larger number of Consul client
-# nodes. Note that these templates assume that the AMI you provide via the ami_id input variable is built from
-# the examples/example-with-encryption/packer/consul-with-certs.json Packer template.
-# ---------------------------------------------------------------------------------------------------------------------
-
-# Terraform 0.9.5 suffered from https://github.com/hashicorp/terraform/issues/14399, which causes this template the
-# conditionals in this template to fail.
-terraform {
-  required_version = ">= 0.9.3, != 0.9.5"
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-# DEPLOY THE CONSUL SERVER NODES
-# ---------------------------------------------------------------------------------------------------------------------
-
-module "consul_servers" {
-  source = "git::git@github.com:hashicorp/terraform-aws-consul.git//modules/consul-cluster?ref=v0.5.0"
-
-  cluster_name  = "${var.cluster_name}-server"
-  cluster_size  = "${var.num_servers}"
-  instance_type = "t2.micro"
-  spot_price    = "${var.spot_price}"
-
-  # The EC2 Instances will use these tags to automatically discover each other and form a cluster
-  cluster_tag_key   = "${var.cluster_tag_key}"
-  cluster_tag_value = "${var.cluster_name}"
-
-  ami_id    = "${var.ami_id}"
-  user_data = "${data.template_file.user_data_server.rendered}"
-
-  vpc_id     = "${data.aws_vpc.default.id}"
-  subnet_ids = "${data.aws_subnet_ids.default.ids}"
-
-  # To make testing easier, we allow Consul and SSH requests from any IP address here but in a production
-  # deployment, we strongly recommend you limit this to the IP address ranges of known, trusted servers inside your VPC.
-  allowed_ssh_cidr_blocks = ["0.0.0.0/0"]
-
-  allowed_inbound_cidr_blocks = ["0.0.0.0/0"]
-  ssh_key_name                = "${var.ssh_key_name}"
-
-  tags = [
-    {
-      key                 = "Environment"
-      value               = "development"
-      propagate_at_launch = true
-    },
-  ]
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-# THE USER DATA SCRIPT THAT WILL RUN ON EACH CONSUL SERVER EC2 INSTANCE WHEN IT'S BOOTING
-# This script will configure and start Consul
-# ---------------------------------------------------------------------------------------------------------------------
-
-data "template_file" "user_data_server" {
-  template = "${file("${path.module}/user-data-server.sh")}"
-
-  vars {
-    cluster_tag_key          = "${var.cluster_tag_key}"
-    cluster_tag_value        = "${var.cluster_name}"
-    enable_gossip_encryption = "${var.enable_gossip_encryption}"
-    gossip_encryption_key    = "${var.gossip_encryption_key}"
-    enable_rpc_encryption    = "${var.enable_rpc_encryption}"
-    ca_path                  = "${var.ca_path}"
-    cert_file_path           = "${var.cert_file_path}"
-    key_file_path            = "${var.key_file_path}"
-  }
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-# DEPLOY THE CONSUL CLIENT NODES
-# Note that you do not have to use the consul-cluster module to deploy your clients. We do so simply because it
-# provides a convenient way to deploy an Auto Scaling Group with the necessary IAM and security group permissions for
-# Consul, but feel free to deploy those clients however you choose (e.g. a single EC2 Instance, a Docker cluster, etc).
-# ---------------------------------------------------------------------------------------------------------------------
-
-module "consul_clients" {
-  source = "git::git@github.com:hashicorp/terraform-aws-consul.git//modules/consul-cluster?ref=v0.5.0"
-
-  cluster_name  = "${var.cluster_name}-client"
-  cluster_size  = "${var.num_clients}"
-  instance_type = "t2.micro"
-  spot_price    = "${var.spot_price}"
-
-  cluster_tag_key   = "consul-clients"
-  cluster_tag_value = "${var.cluster_name}"
-
-  ami_id    = "${var.ami_id}"
-  user_data = "${data.template_file.user_data_client.rendered}"
-
-  vpc_id     = "${data.aws_vpc.default.id}"
-  subnet_ids = "${data.aws_subnet_ids.default.ids}"
-
-  # To make testing easier, we allow Consul and SSH requests from any IP address here but in a production
-  # deployment, we strongly recommend you limit this to the IP address ranges of known, trusted servers inside your VPC.
-  allowed_ssh_cidr_blocks = ["0.0.0.0/0"]
-
-  allowed_inbound_cidr_blocks = ["0.0.0.0/0"]
-  ssh_key_name                = "${var.ssh_key_name}"
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-# THE USER DATA SCRIPT THAT WILL RUN ON EACH CONSUL CLIENT EC2 INSTANCE WHEN IT'S BOOTING
-# This script will configure and start Consul
-# ---------------------------------------------------------------------------------------------------------------------
-
-data "template_file" "user_data_client" {
-  template = "${file("${path.module}/user-data-client.sh")}"
-
-  vars {
-    cluster_tag_key          = "${var.cluster_tag_key}"
-    cluster_tag_value        = "${var.cluster_name}"
-    enable_gossip_encryption = "${var.enable_gossip_encryption}"
-    gossip_encryption_key    = "${var.gossip_encryption_key}"
-    enable_rpc_encryption    = "${var.enable_rpc_encryption}"
-    ca_path                  = "${var.ca_path}"
-    cert_file_path           = "${var.cert_file_path}"
-    key_file_path            = "${var.key_file_path}"
-  }
-}
-
-# ---------------------------------------------------------------------------------------------------------------------
-# DEPLOY CONSUL IN THE DEFAULT VPC AND SUBNETS
-# Using the default VPC and subnets makes this example easy to run and test, but it means Consul is accessible from the
-# public Internet. For a production deployment, we strongly recommend deploying into a custom VPC with private subnets.
-# ---------------------------------------------------------------------------------------------------------------------
-
-data "aws_vpc" "default" {
-  default = "${var.vpc_id == "" ? true : false}"
-  id      = "${var.vpc_id}"
-}
-
-data "aws_subnet_ids" "default" {
-  vpc_id = "${data.aws_vpc.default.id}"
-}
-
+// Data
 data "aws_region" "current" {}
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn-ami-hvm-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+
+  filter {
+    name   = "root-device-type"
+    values = ["ebs"]
+  }
+}
+
+// Resources
+data "template_cloudinit_config" "consul_instance_data" {
+  gzip          = false
+  base64_encode = false
+
+  part {
+    filename     = "consul-node.sh"
+    content_type = "text/x-shellscript"
+    content      = "${data.template_file.consul_script.rendered}"
+  }
+}
+
+data "template_file" "consul_script" {
+  template = "${file("${path.module}/files/consul-node.sh")}"
+
+  vars {
+    asgname = "${var.asg_name}"
+    region  = "${data.aws_region.current.name}"
+    size    = "${var.min_size}"
+    consul_version = "${var.consul_version}"
+    node_tag_key = "${var.consul_node_tag_key}"
+    node_tag_value = "${var.consul_node_tag_value}"
+  }
+}
+
+resource "aws_lb" "consul_lb" {
+  name               = "consul-lb"
+  internal           = false
+  load_balancer_type = "application"
+
+  security_groups = [
+    "${aws_security_group.consul-cluster-vpc.id}",
+    "${aws_security_group.consul-cluster-public-web.id}",
+  ]
+
+  subnets = ["${var.public_subnet_ids}"]
+
+  // TODO: tags
+}
+
+resource "aws_lb_target_group" "consul_lb_tg" {
+  name        = "consul-lb-tg"
+  port        = 8500
+  protocol    = "HTTP"
+  vpc_id      = "${var.vpc_id}"
+  target_type = "instance"
+
+  health_check {
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    path                = "/ui/"
+    interval            = 30
+  }
+
+  // TODO: tags
+}
+
+resource "aws_lb_listener" "consul_lb_listener" {
+  load_balancer_arn = "${aws_lb.consul_lb.arn}"
+  protocol          = "HTTP"
+  port              = 80
+
+  default_action {
+    type             = "forward"
+    target_group_arn = "${aws_lb_target_group.consul_lb_tg.arn}"
+  }
+}
+
+resource "aws_launch_configuration" "consul_cluster_lc" {
+  name_prefix          = "consul-node-"
+  image_id             = "${data.aws_ami.amazon_linux.image_id}"
+  instance_type        = "${var.node_instance_type}"
+  user_data     = "${data.template_cloudinit_config.consul_instance_data.rendered}"
+  iam_instance_profile = "${aws_iam_instance_profile.consul_instance_profile.id}"
+  associate_public_ip_address = true // optional, managed at subnet level
+
+  security_groups = [
+    "${aws_security_group.consul-cluster-vpc.id}",
+    "${aws_security_group.consul-cluster-public-web.id}",
+    "${aws_security_group.consul-cluster-public-ssh.id}",
+  ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  key_name = "${var.key_name}"
+}
+
+resource "aws_autoscaling_group" "consul_cluster_asg" {
+  depends_on           = ["aws_launch_configuration.consul_cluster_lc", "aws_lb.consul_lb"]
+  name                 = "${var.asg_name}"
+  launch_configuration = "${aws_launch_configuration.consul_cluster_lc.name}"
+  min_size             = "${var.min_size}"
+  max_size             = "${var.max_size}"
+  vpc_zone_identifier  = ["${var.public_subnet_ids}"]
+  target_group_arns = [ "${aws_lb_target_group.consul_lb_tg.arn}" ]
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tag {
+    key                 = "${var.consul_node_tag_key}"
+    value               = "${var.consul_node_tag_value}"
+    propagate_at_launch = true
+  }
+
+  tag {
+    key                 = "Project"
+    value               = "consul-cluster"
+    propagate_at_launch = true
+  }
+}

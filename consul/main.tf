@@ -11,47 +11,33 @@ provider "aws" {
   version = "~> 2.1"
 }
 
-locals {
-  owner = "letslearn"
+// Resources
+module "consul_cluster" {
+  source = "./base"
+
+  key_name = "frankfurt-kitchen"
+  consul_version = "1.4.3"
+
+  node_instance_type = "t3.small"
+  min_size           = "2"
+  max_size           = "3"
+
+  vpc_id            = "${data.aws_vpc.consul_vpc.id}"
+  public_subnet_ids = "${data.aws_subnet_ids.consul_public_subnet_ids.ids}"
 }
 
-data "aws_route53_zone" "main" {
-  name = "chomat.de"
-}
-
-module "certificates" {
-  source = "../private-tls-cert"
-
-  ca_common_name = "${local.owner}"
-  common_name = "${local.owner}"
-  dns_names = [ "consul.chomat.de" ]
-  organization_name = "${local.owner}"
-  owner = "chomatdam"
-
-  ca_public_key_file_path = "${path.module}/packer/ca.crt.pem"
-
-  public_key_file_path = "${path.module}/packer/consul.crt.pem"
-  private_key_file_path = "${path.module}/packer/consul.key.pem"
-
-  validity_period_hours = "13140"
-}
-
-data "aws_vpc" "tools" {
+// Data
+data "aws_vpc" "consul_vpc" {
   tags {
-    Application = "Tools"
+    Name = "tools"
   }
 }
 
-module "consul_cluster" {
-  source = "base"
+data "aws_subnet_ids" "consul_public_subnet_ids" {
+  vpc_id = "${data.aws_vpc.consul_vpc.id}"
 
-  cluster_name = "${local.owner}-consul-cluster"
-  ami_id = "ami-0327b0c1b0a5182ca"
-
-  vpc_id = "${data.aws_vpc.tools.id}"
-  ssh_key_name = "frankfurt-kitchen"
-
-  ca_path = "${module.certificates.ca_public_key_file_path}"
-  key_file_path = "${module.certificates.private_key_file_path}"
-  cert_file_path = "${module.certificates.public_key_file_path}"
+  tags {
+    Environment = "${terraform.workspace}"
+    Type        = "public"
+  }
 }

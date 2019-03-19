@@ -18,13 +18,11 @@ locals {
 module "network_tools" {
   source = "base"
 
+  owner = "${local.owner}"
+  vpc_name = "tools"
   vpc_cidr_block   = "172.20.0.0/16"
-  subnets_number   = "2"
-  with_internet_gw = true
+  avaibility_zones_number = "2"
+  db_subnet_enabled = false
 
-  tags = {
-    Owner       = "${local.owner}"
-    Environment = "${terraform.workspace}"
-    Application = "Tools"
-  }
+  extra_tags = {}
 }
