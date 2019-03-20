@@ -18,7 +18,7 @@ resource "aws_s3_bucket" "s3_certificates_consul" {
 }
 
 module "consul_cluster" {
-  source = "./base"
+  source = "base"
 
   key_name       = "frankfurt-kitchen"
   consul_version = "1.4.3"
