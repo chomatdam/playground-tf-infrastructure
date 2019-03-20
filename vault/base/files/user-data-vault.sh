@@ -5,7 +5,10 @@ exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
 # Shell variables
 CONSUL_VERSION="${consul_version}"
+CONSUL_CLUSTER_TAG_KEY="${consul_cluster_tag_key}"
+CONSUL_CLUSTER_TAG_VALUE="${consul_cluster_tag_value}"
 VAULT_VERSION="${vault_version}"
+
 
 # Update the packages.
 sudo yum update -y
@@ -16,30 +19,31 @@ usermod -a -G docker ec2-user
 service docker start
 chkconfig docker on
 
-# TODO: create and push certificates !
-readonly VAULT_TLS_CERT_FILE="/opt/vault/tls/vault.crt.pem"
-readonly VAULT_TLS_KEY_FILE="/opt/vault/tls/vault.key.pem"
-readonly VAULT_CONFIG="/opt/vault/config.hcl"
+#TODO: create and push certificates
+#readonly VAULT_TLS_CERT_FILE="/opt/vault/tls/vault.crt.pem"
+#readonly VAULT_TLS_KEY_FILE="/opt/vault/tls/vault.key.pem"
 
-# Start the Consul server.
+# Local IP
+IP=$(curl http://169.254.169.254/latest/meta-data/local-ipv4)
+echo "Instance IP is: $IP"
+
+# Start the Consul client.
 docker run -d --net=host \
     --name=consul-client \
     consul:$CONSUL_VERSION agent \
-    --client \
-    --cluster-tag-key "${consul_cluster_tag_key}" \
-    --cluster-tag-value "${consul_cluster_tag_value}"
+    -bind=$IP \
+    -retry-join="provider=aws tag_key=$CONSUL_CLUSTER_TAG_KEY tag_value=$CONSUL_CLUSTER_TAG_VALUE"
 
-# TODO: VAULT_CONFIG to upload - check options available, enable and mount volume for certificates or disable TLS
-docker run --cap-add=IPC_LOCK \
-        --name=vault-server \
-        -e 'VAULT_LOCAL_CONFIG={"backend": {"file": {"path": "$$VAULT_CONFIG"}}, "default_lease_ttl": "168h", "max_lease_ttl": "720h"}' \
-        vault:$VAULT_VERSION \
-        server \
-        --enable-auto-unseal \
-        --auto-unseal-kms-key-id "${kms_key_id}" \
-        --auto-unseal-kms-key-region "${aws_region}" \
-        --tls-cert-file "$VAULT_TLS_CERT_FILE" \
-        --tls-key-file "$VAULT_TLS_KEY_FILE"
+# Start the Vault server.
+sed -i "s/\bEC2_VAULT_IP_ADDRESS\b/$IP/g" /tmp/vault/config.hcl
+docker run \
+    --name=vault-server \
+    --net=host \
+    --cap-add=IPC_LOCK \
+    --volume /tmp/vault:/vault/file \
+    vault:$VAULT_VERSION \
+    server \
+    -config=/vault/file/config.hcl
 
 
 # When you ssh to one of the instances in the vault cluster and initialize the server

@@ -13,7 +13,6 @@ resource "aws_security_group" "control_plane_sg" {
   tags = "${var.common_tags}"
 }
 
-# Remote access:   laptop -> control plane over HTTPS
 resource "aws_security_group_rule" "restricted_https" {
   //  cidr_blocks       = ["${var.inbound_cidr_blocks["Office"]}", "${var.inbound_cidr_blocks["Home"]}"] # until VPN is deployed
   cidr_blocks       = ["0.0.0.0/0"]

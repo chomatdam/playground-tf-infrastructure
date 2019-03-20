@@ -1,0 +1,7 @@
+#cloud-config
+write_files:
+  - path: /tmp/vault/config.hcl
+    permissions: 400
+    content: |
+      # Vault configuration file
+      ${vault_config}

@@ -56,10 +56,7 @@ resource "aws_lb" "consul_lb" {
   internal           = false
   load_balancer_type = "application"
 
-  security_groups = [
-    "${aws_security_group.consul-cluster-vpc.id}",
-    "${aws_security_group.consul-cluster-public-web.id}",
-  ]
+  security_groups = [ "${aws_security_group.consul_cluster_lb_public.id}" ]
 
   subnets = ["${var.public_subnet_ids}"]
 
@@ -104,9 +101,8 @@ resource "aws_launch_configuration" "consul_cluster_lc" {
   associate_public_ip_address = true                                                              // optional, managed at subnet level
 
   security_groups = [
-    "${aws_security_group.consul-cluster-vpc.id}",
-    "${aws_security_group.consul-cluster-public-web.id}",
-    "${aws_security_group.consul-cluster-public-ssh.id}",
+    "${aws_security_group.consul_cluster_internal.id}",
+    "${aws_security_group.consul_cluster_public.id}"
   ]
 
   lifecycle {

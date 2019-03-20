@@ -12,17 +12,32 @@ data "terraform_remote_state" "consul_state" {
   }
 }
 
-data "template_file" "user_data_vault_cluster" {
-  template = "${file("${path.module}/user-data-vault.sh")}"
+data "template_file" "cloudinit_config" {
+  template = "${file("${path.module}/files/init.yaml")}"
+
+  vars {
+    vault_config = "${indent(6, data.template_file.vault_config.rendered)}"
+  }
+}
+
+data "template_file" "vault_config" {
+  template = "${file("${path.module}/files/config.hcl")}"
 
   vars {
     aws_region = "${data.aws_region.current.name}"
-    kms_key_id = "${aws_kms_alias.master_key_alias.target_key_id}}"
-    kms_endpoint = "https://kms.${data.aws_region.current}.amazonaws.com"
+    kms_key_id = "${aws_kms_alias.master_key_alias.target_key_id}"
+  }
+}
 
-    consul_version = "${var.consul_version}"
-    consul_cluster_tag_key   = "${data.terraform_remote_state.consul_state.outputs.consul_cluster_tag_key}"
-    consul_cluster_tag_value = "${data.terraform_remote_state.consul_state.outputs.consul_cluster_tag_value}"
+data "template_file" "user_data_vault_cluster" {
+  template = "${file("${path.module}/files/user-data-vault.sh")}"
+
+  vars {
+    aws_region = "${data.aws_region.current.name}"
+
+    consul_version           = "${var.consul_version}"
+    consul_cluster_tag_key   = "${data.terraform_remote_state.consul_state.consul_cluster_tag_key}"
+    consul_cluster_tag_value = "${data.terraform_remote_state.consul_state.consul_cluster_tag_value}"
 
     vault_version = "${var.vault_version}"
   }
