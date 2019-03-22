@@ -1,2 +1,2 @@
 ### OpenVPN
-TODO
+- Fail2ban

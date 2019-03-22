@@ -1,0 +1,2 @@
+### Kafka
+- HA cluster
