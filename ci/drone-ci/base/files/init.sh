@@ -17,9 +17,9 @@ docker run \
   --volume=/var/run/docker.sock:/var/run/docker.sock \
   --volume=/var/lib/drone:/data \
   --env=DRONE_GITHUB_SERVER=https://github.com \
-  --env=DRONE_GITHUB_CLIENT_ID={% your-github-client-id %} \
-  --env=DRONE_GITHUB_CLIENT_SECRET={% your-github-client-secret %} \
-  --env=DRONE_RPC_SECRET={% your-shared-secret %} \
+  --env=DRONE_GITHUB_CLIENT_ID=${github_oauth_app_client_id} \
+  --env=DRONE_GITHUB_CLIENT_SECRET=${github_oauth_app_client_secret} \
+  --env=DRONE_RPC_SECRET=${drone_rpc_secret} \
   --env=DRONE_SERVER_HOST=${domain_name} \
   --env=DRONE_SERVER_PROTO=https \
   --env=DRONE_TLS_AUTOCERT=true \

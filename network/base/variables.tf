@@ -18,8 +18,3 @@ variable "vpc_cidr_block" {
 variable "avaibility_zones_number" {
   type = "string"
 }
-
-variable "db_subnet_enabled" {
-  default = true
-  type    = "string"
-}
