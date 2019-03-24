@@ -19,6 +19,7 @@ docker run \
   --env=DRONE_GITHUB_SERVER=https://github.com \
   --env=DRONE_GITHUB_CLIENT_ID=${github_oauth_app_client_id} \
   --env=DRONE_GITHUB_CLIENT_SECRET=${github_oauth_app_client_secret} \
+  --env=DRONE_USER_FILTER=${github_organization} \
   --env=DRONE_RPC_SECRET=${drone_rpc_secret} \
   --env=DRONE_SERVER_HOST=${domain_name} \
   --env=DRONE_SERVER_PROTO=https \

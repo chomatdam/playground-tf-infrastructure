@@ -25,6 +25,7 @@ module "drone_ci_server" {
   db_subnet_ids    = "${data.aws_subnet_ids.tools_db.ids}"
   key_name         = "frankfurt-kitchen"
 
+  github_organization            = "letslearn-infra"
   github_oauth_app_client_id     = ""
   github_oauth_app_client_secret = ""
 }

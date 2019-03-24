@@ -37,3 +37,7 @@ variable "github_oauth_app_client_id" {
 variable "github_oauth_app_client_secret" {
   type = "string"
 }
+
+variable "github_organization" {
+  type = "string"
+}

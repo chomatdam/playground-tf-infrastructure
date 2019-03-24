@@ -106,6 +106,7 @@ data "template_file" "drone_server_template" {
     s3_bucket   = "${aws_s3_bucket.logs_storage.bucket}"
     domain_name = "${local.drone_domain_name}"
 
+    github_organization            = "${var.github_organization}"
     github_oauth_app_client_id     = "${var.github_oauth_app_client_id}"
     github_oauth_app_client_secret = "${var.github_oauth_app_client_secret}"
     drone_rpc_secret               = "${random_string.rpc_server_client_secret.result}"
