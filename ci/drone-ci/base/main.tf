@@ -42,6 +42,12 @@ resource "aws_instance" "drone_server" {
   key_name                    = "${var.key_name}"
   vpc_security_group_ids      = ["${aws_security_group.server_sg.id}"]
   subnet_id                   = "${var.server_subnet_id}"
+
+  tags {
+    Owner = "${var.owner}"
+    Environment = "${terraform.workspace}"
+    Project = "${var.project}"
+  }
 }
 
 resource "aws_security_group" "server_sg" {
