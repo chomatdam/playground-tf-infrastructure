@@ -1,0 +1,10 @@
+#cloud-config
+write_files:
+  - path: /etc/openvpn/server.conf
+    permissions: 400
+    content: |
+      ${openvpn_server_conf_file}
+  - path: /etc/openvpn/easy-rsa/vars
+    permissions: 400
+    content: |
+      ${easyrsa_variables_file}
