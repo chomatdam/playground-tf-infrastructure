@@ -1,6 +1,6 @@
 // Auto-join Consul feature
 resource "aws_iam_policy_attachment" "cluster_discovery" {
-  name = "consul-node-policy-attachment"
+  name       = "consul-node-policy-attachment"
   roles      = ["${aws_iam_role.instance_role.name}"]
   policy_arn = "${aws_iam_policy.cluster_discovery.arn}"
 }

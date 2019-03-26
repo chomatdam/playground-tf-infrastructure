@@ -16,8 +16,8 @@ variable "instance_count" {
 
 variable "dedicated_master_count" {
   type = "string"
-
 }
+
 variable "dedicated_master_type" {
   type = "string"
 }

@@ -2,18 +2,6 @@ locals {
   drone_domain_name = "drone.${var.domain_name}"
 }
 
-data "aws_route53_zone" "main_domain" {
-  name = "${var.domain_name}"
-}
-
-resource "aws_route53_record" "drone_domain" {
-  name    = "${local.drone_domain_name}"
-  type    = "A"
-  zone_id = "${data.aws_route53_zone.main_domain.zone_id}"
-  ttl     = 5
-  records = ["${aws_eip.drone_static_ip.public_ip}"]
-}
-
 resource "aws_s3_bucket" "logs_storage" {
   bucket = "${var.owner}-drone-ci-build-logs"
   acl    = "private"
@@ -29,11 +17,6 @@ resource "random_string" "rpc_server_client_secret" {
   special = false
 }
 
-resource "aws_eip" "drone_static_ip" {
-  instance = "${aws_instance.drone_server.id}"
-  vpc      = true
-}
-
 resource "aws_instance" "drone_server" {
   associate_public_ip_address = true
   ami                         = "${data.aws_ami.amazon_linux.image_id}"
@@ -44,50 +27,10 @@ resource "aws_instance" "drone_server" {
   subnet_id                   = "${var.server_subnet_id}"
 
   tags {
-    Owner = "${var.owner}"
+    Owner       = "${var.owner}"
     Environment = "${terraform.workspace}"
-    Project = "${var.project}"
+    Project     = "${var.project}"
   }
-}
-
-resource "aws_security_group" "server_sg" {
-  vpc_id = "${var.vpc_id}"
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_security_group_rule" "server_ssh" {
-  from_port         = 22
-  protocol          = "tcp"
-  security_group_id = "${aws_security_group.server_sg.id}"
-  to_port           = 22
-  type              = "ingress"
-  cidr_blocks       = ["0.0.0.0/0"]                        // TODO: from VPN ip only
-}
-
-resource "aws_security_group_rule" "server_https" {
-  description = "Endpoint for users"
-  from_port         = 443
-  protocol          = "tcp"
-  security_group_id = "${aws_security_group.server_sg.id}"
-  to_port           = 443
-  type              = "ingress"
-  cidr_blocks       = ["0.0.0.0/0"]
-}
-
-resource "aws_security_group_rule" "server_http" {
-  description = "Used by acme/autocert to authorize the domain name"
-  from_port         = 80
-  protocol          = "tcp"
-  security_group_id = "${aws_security_group.server_sg.id}"
-  to_port           = 80
-  type              = "ingress"
-  cidr_blocks       = ["0.0.0.0/0"]
 }
 
 data "template_cloudinit_config" "user_data" {

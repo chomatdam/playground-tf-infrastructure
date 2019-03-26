@@ -19,14 +19,16 @@ resource "aws_launch_configuration" "launch_configuration" {
   instance_type = "${var.instance_type}"
   user_data     = "${data.template_cloudinit_config.user_data.rendered}"
 
-  iam_instance_profile        = "${aws_iam_instance_profile.instance_profile.name}"
-  key_name                    = "${var.key_name}"
-  security_groups             = [
+  iam_instance_profile = "${aws_iam_instance_profile.instance_profile.name}"
+  key_name             = "${var.key_name}"
+
+  security_groups = [
     "${aws_security_group.vault_cluster_public.id}",
     "${aws_security_group.vault_cluster_internal.id}",
-    "${aws_security_group.vault_cluster_consul_clients_internal.id}"
+    "${aws_security_group.vault_cluster_consul_clients_internal.id}",
   ]
-  associate_public_ip_address = true                                                // Already set by the subnet
+
+  associate_public_ip_address = true // Already set by the subnet
 
   lifecycle {
     create_before_destroy = true

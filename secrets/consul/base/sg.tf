@@ -4,10 +4,10 @@ resource "aws_security_group" "consul_cluster_internal" {
   vpc_id      = "${var.vpc_id}"
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    self        = true
+    from_port = 0
+    to_port   = 0
+    protocol  = "-1"
+    self      = true
   }
 
   tags {
@@ -16,13 +16,14 @@ resource "aws_security_group" "consul_cluster_internal" {
     Type    = "internal"
   }
 }
+
 resource "aws_security_group_rule" "consul_server_node_local_allow_all_in" {
   description = "Allow all traffic in"
   type        = "ingress"
   from_port   = 0
   to_port     = 0
   protocol    = "-1"
-  self = true
+  self        = true
 
   security_group_id = "${aws_security_group.consul_cluster_internal.id}"
 }
@@ -45,7 +46,7 @@ resource "aws_security_group_rule" "allow_ssh_inbound_from_cidr_blocks" {
   from_port   = 22
   to_port     = 22
   protocol    = "tcp"
-  cidr_blocks = ["0.0.0.0/0"] // TODO: change when VPN
+  cidr_blocks = ["0.0.0.0/0"]                  // TODO: change when VPN
 
   security_group_id = "${aws_security_group.consul_cluster_public.id}"
 }
@@ -57,7 +58,7 @@ resource "aws_security_group_rule" "consul_server_node_allow_http_in" {
   to_port     = 8500
   protocol    = "tcp"
 
-  security_group_id = "${aws_security_group.consul_cluster_public.id}"
+  security_group_id        = "${aws_security_group.consul_cluster_public.id}"
   source_security_group_id = "${aws_security_group.consul_cluster_lb_public.id}"
 }
 

@@ -16,7 +16,7 @@ locals {
 }
 
 module "certificates" {
-  source = "..\/..\/certificates"
+  source = "../../../certificates"
 
   ca_common_name    = "${local.owner}"
   common_name       = "${local.owner}"
@@ -39,7 +39,7 @@ data "aws_vpc" "tools" {
 }
 
 module "consul_cluster" {
-  source = "base"
+  source = "./base"
 
   cluster_name = "${local.owner}-consul-cluster"
   ami_id       = "ami-0327b0c1b0a5182ca"

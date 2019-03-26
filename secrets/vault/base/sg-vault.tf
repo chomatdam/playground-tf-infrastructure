@@ -11,11 +11,11 @@ resource "aws_security_group" "vault_cluster_internal" {
 
 resource "aws_security_group_rule" "allow_cluster_inbound_from_self" {
   description = "Forwarded requests between Vault servers"
-  type      = "ingress"
-  from_port = 8200
-  to_port   = 8201
-  protocol  = "tcp"
-  self      = true
+  type        = "ingress"
+  from_port   = 8200
+  to_port     = 8201
+  protocol    = "tcp"
+  self        = true
 
   security_group_id = "${aws_security_group.vault_cluster_internal.id}"
 }
@@ -27,6 +27,6 @@ resource "aws_security_group_rule" "allow_api_inbound_from_cidr_blocks" {
   to_port     = 8200
   protocol    = "tcp"
 
-  security_group_id = "${aws_security_group.vault_cluster_internal.id}"
+  security_group_id        = "${aws_security_group.vault_cluster_internal.id}"
   source_security_group_id = "${aws_security_group.vault_lb.id}"
 }

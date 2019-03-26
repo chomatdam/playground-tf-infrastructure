@@ -1,7 +1,7 @@
 data "aws_region" "current" {}
 
 resource "aws_elasticsearch_domain" "elk" {
-  domain_name = "${var.domain_name}"
+  domain_name           = "${var.domain_name}"
   elasticsearch_version = "${var.elasticsearch_version}"
 
   // TODO: to see how this part can be organized
@@ -40,11 +40,11 @@ POLICY
 
   vpc_options = [{
     security_group_ids = ["${var.vpc_id}"]
-    subnet_ids         = [ "${var.subnet_ids}" ]
+    subnet_ids         = ["${var.subnet_ids}"]
   }]
 
   ebs_options {
-    ebs_enabled =   true
+    ebs_enabled = true
     volume_size = "${var.ebs_volume_size}"
     volume_type = "${var.ebs_volume_type}"
   }
@@ -53,6 +53,5 @@ POLICY
     automated_snapshot_start_hour = "4"
   }
 
-  tags {
-  }
+  tags {}
 }
