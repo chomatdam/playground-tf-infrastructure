@@ -18,28 +18,23 @@ yum repolist | grep epel
 yum -y install openvpn
 
 wget -v https://github.com/OpenVPN/easy-rsa/releases/download/v$EASY_RSA_VERSION/EasyRSA-unix-v$EASY_RSA_VERSION.tgz -P $OPEN_VPN_PATH
-mkdir $EASY_RSA_PATH
+#mkdir $EASY_RSA_PATH  # not needed with Terraform because Cloud-init is creating the 'vars' file in this directory
 tar -xzvf $OPEN_VPN_PATH/*.tgz -C $EASY_RSA_PATH --strip 1
 
-$EASY_RSA_PATH/easyrsa init-pki
-$EASY_RSA_PATH/easyrsa --batch --req-cn="$OWNER Root CA" build-ca nopass
-$EASY_RSA_PATH/easyrsa gen-dh
+cd $EASY_RSA_PATH
+./easyrsa init-pki
+./easyrsa --batch --req-cn="$OWNER Root CA" build-ca nopass
+./easyrsa gen-dh
 
-$EASY_RSA_PATH/easyrsa build-server-full server nopass  # Used by server.conf
-$EASY_RSA_PATH/easyrsa build-client-full client nopass
+./easyrsa build-server-full server nopass  # Used by server.conf
+./easyrsa build-client-full client nopass
 
-aws s3 sync $$EASY_RSA_PATH/pki s3://$S3_BUCKET --exclude "*" --include "*.crt" --include "*.key"
+aws s3 sync $EASY_RSA_PATH/pki s3://$S3_BUCKET --exclude "*" --include "*.crt" --include "*.key"
 
 echo 1 | tee /proc/sys/net/ipv4/ip_forward
 sysctl -p
 
 iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
-
-# New VPN user certificate
-#./easyrsa gen-req --req-cn=${lambda_user_req_input} client-req nopass
-# Revoke VPN user certificate
-#./easyrsa revoke ${CERT_NAME}
-#./easyrsa gen-crl
 
 systemctl start openvpn@server.service  # @server <-> server.conf
 systemctl status openvpn@server.service

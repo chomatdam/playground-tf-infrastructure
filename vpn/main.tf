@@ -19,7 +19,7 @@ module "vpn_server" {
   key_name      = "frankfurt-kitchen"
   owner         = "letslearn"
 
-  vpc_id    = "${data.aws_vpc.tools}"
+  vpc_id    = "${data.aws_vpc.tools.id}"
   subnet_id = "${data.aws_subnet_ids.tools_public.ids[0]}"
 }
 

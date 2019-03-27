@@ -16,13 +16,19 @@ data "template_file" "cloudinit_template" {
   template = "${file("${path.module}/files/init.yaml")}"
 
   vars {
-    openvpn_server_conf_file = "${data.template_file.openvpn_server_conf_template.rendered}"
-    easyrsa_variables_file   = "${data.template_file.easyrsa_vars_template.rendered}"
+    vpn_eip_alloc_id         = "${aws_eip.vpn.id}"
+    openvpn_server_conf_file = "${indent(6, data.template_file.openvpn_server_conf_template.rendered)}"
+    easyrsa_variables_file   = "${indent(6, data.template_file.easyrsa_vars_template.rendered)}"
   }
 }
 
 data "template_file" "script_template" {
   template = "${file("${path.module}/files/script.sh")}"
+
+  vars {
+    owner       = "${var.owner}"
+    bucket_name = "${local.cert_bucket_name}"
+  }
 }
 
 # Embedded in cloudinit_template
@@ -30,7 +36,7 @@ data "template_file" "openvpn_server_conf_template" {
   template = "${file("${path.module}/files/server.conf")}"
 
   vars {
-    route_value = "${split("/", data.aws_vpc.vpn_vpc.cidr_block)[0]}  255.255.240.0"
+    route_value = "${element(split("/", data.aws_vpc.vpn_vpc.cidr_block), 0)}  255.255.240.0"
   }
 }
 
@@ -58,7 +64,7 @@ data "aws_ami" "amazon_linux" {
 
   filter {
     name   = "name"
-    values = ["amzn-ami-hvm-*"]
+    values = ["amzn2-ami-hvm-*"]
   }
 
   filter {
