@@ -2,6 +2,20 @@ locals {
   cert_bucket_name = "${var.owner}-vpn-certificates"
 }
 
+data "template_file" "client_conf_template" {
+  template = "${file("${path.module}/files/client.ovpn")}"
+
+  vars {
+    domain_name = "${var.domain_name}"
+  }
+}
+
+resource "aws_s3_bucket_object" "client_conf" {
+  bucket  = "${local.cert_bucket_name}"
+  key     = "client.ovpn"
+  content = "${data.template_file.client_conf_template.rendered}"
+}
+
 resource "aws_launch_configuration" "launch_configuration" {
   depends_on = ["aws_s3_bucket.certificates"]
 

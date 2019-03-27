@@ -39,7 +39,7 @@ resource "aws_db_instance" "default" {
   apply_immediately         = true
   db_subnet_group_name      = "${aws_db_subnet_group.drone.name}"
   vpc_security_group_ids    = ["${aws_security_group.db_sg.id}"]
-  final_snapshot_identifier = "${join("-", list(var.owner, var.project, terraform.workspace, timestamp()))}"
+  final_snapshot_identifier = "${join("-", list(var.owner, var.project, terraform.workspace, replace(timestamp(), ":", "-")) )}"
 
   //  TODO: tags {}
 }
