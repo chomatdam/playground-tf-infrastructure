@@ -29,7 +29,10 @@ cd $EASY_RSA_PATH
 ./easyrsa build-server-full server nopass  # Used by server.conf
 ./easyrsa build-client-full client nopass
 
-aws s3 sync $EASY_RSA_PATH/pki s3://$S3_BUCKET --exclude "*" --include "*.crt" --include "*.key"
+openvpn --genkey --secret $OPEN_VPN_PATH/ta.key
+
+
+aws s3 sync $OPEN_VPN_PATH s3://$S3_BUCKET --exclude "*" --include "*.crt" --include "*.key"
 
 echo 1 | tee /proc/sys/net/ipv4/ip_forward
 sysctl -p
@@ -37,4 +40,5 @@ sysctl -p
 iptables -t nat -A POSTROUTING -s 10.8.0.0/24 -o eth0 -j MASQUERADE
 
 systemctl start openvpn@server.service  # @server <-> server.conf
+systemctl enable openvpn@server.service
 systemctl status openvpn@server.service
