@@ -1,5 +1,21 @@
+# Env and temp files
 .idea
 .terraform
+
+# k8s
 kubernetes/config/config
 kubernetes/config/config_map_aws_auth.yaml
+
+# MacOS
+.DS_Store
+
+# Certificates
+*.crt
+*.csr
+*_creds
+*.jks
+*.srl
+*.key
 *.pem
+*.der
+*.p12
