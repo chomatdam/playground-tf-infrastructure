@@ -1,0 +1,10 @@
+#cloud-config
+write_files:
+  - path: /tmp/zk/jaas_zk.conf
+    permissions: 400
+    content: |
+      ${zk_jaas_file}
+  - path: /tmp/docker-compose.yml
+    permissions: 400
+    content: |
+      ${docker_compose_file}
