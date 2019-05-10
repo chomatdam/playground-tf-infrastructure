@@ -1,3 +1,5 @@
+data "aws_availability_zones" "current" {}
+
 resource "aws_autoscaling_group" "zookeeper" {
   depends_on                = ["aws_launch_configuration.zookeeper"]
   count                     = "${var.nb_instances}"
@@ -8,7 +10,7 @@ resource "aws_autoscaling_group" "zookeeper" {
   max_size                  = 1
   min_size                  = 1
   name                      = "${var.owner}-nb_instances-asg-${count.index}"
-  vpc_zone_identifier       = ["${var.subnet_ids}"]
+  vpc_zone_identifier       = ["${var.subnet_ids[count.index]}"]
 
   lifecycle {
     create_before_destroy = true
@@ -30,7 +32,7 @@ resource "aws_launch_configuration" "zookeeper" {
   key_name                    = "${var.key_name}"
   name_prefix                 = "${var.owner}-zookeeper-node-${count.index}"
   security_groups             = ["${aws_security_group.zookeeper_internal.id}", "${aws_security_group.zookeeper_external.id}"]
-  user_data                   = "${data.template_cloudinit_config.cloudinit_user_data.*.rendered[count.index]}"
+  user_data                   = "${element(data.template_cloudinit_config.cloudinit_user_data.*.rendered, count.index)}"
   spot_price                  = "0.1"
 
   lifecycle {
@@ -67,14 +69,14 @@ data "aws_route53_zone" "selected" {
   name = "${var.domain_name}"
 }
 
-resource "aws_route53_record" "zookeeper_domains" {
-  count   = "${var.nb_instances}"
-  name    = "zookeeper-${count.index + 1}.${var.domain_name}"
-  records = ["${element(aws_eip.zookeeper.*.public_ip, count.index)}"]
-  ttl     = "60"
-  type    = "A"
-  zone_id = "${data.aws_route53_zone.selected.zone_id}"
-}
+//resource "aws_route53_record" "zookeeper_domains" {
+//  count   = "${var.nb_instances}"
+//  name    = "zookeeper${count.index + 1}.${var.domain_name}"
+//  records = ["${element(aws_eip.zookeeper.*.private_ip, count.index)}"]
+//  ttl     = "60"
+//  type    = "A"
+//  zone_id = "${data.aws_route53_zone.selected.zone_id}"
+//}
 
 resource "aws_iam_role_policy" "zookeeper_eni" {
   name  = "${var.owner}-zookeeper-eni"
@@ -86,13 +88,10 @@ resource "aws_iam_role_policy" "zookeeper_eni" {
     {
       "Action": [
         "ec2:AttachNetworkInterface",
-        "ec2:CreateNetworkInterface",
         "ec2:DeleteNetworkInterface",
         "ec2:DescribeNetworkInterfaceAttribute",
         "ec2:DescribeNetworkInterfaces",
-        "ec2:DetachNetworkInterface",
-        "ec2:ModifyInstanceAttribute",
-        "ec2:ModifyNetworkInterfaceAttribute"
+        "ec2:DetachNetworkInterface"
       ],
       "Effect": "Allow",
       "Resource": "*"
@@ -105,6 +104,13 @@ EOF
 resource "aws_network_interface" "zookeeper" {
   count = "${var.nb_instances}"
   subnet_id = "${var.subnet_ids[count.index]}"
+  security_groups = ["${aws_security_group.zookeeper_internal.id}", "${aws_security_group.zookeeper_external.id}"]
+
+  tags {
+    Owner   = "${var.owner}"
+    Service = "Zookeeper"
+    Node    = "${count.index + 1}"
+  }
 }
 
 resource "aws_eip" "zookeeper" {
@@ -113,4 +119,3 @@ resource "aws_eip" "zookeeper" {
   network_interface = "${aws_network_interface.zookeeper.*.id[count.index]}"
   vpc               = true
 }
-
