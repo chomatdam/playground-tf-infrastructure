@@ -1,4 +1,6 @@
 terraform {
+  required_version = ">= 0.12"
+
   backend "s3" {
     bucket  = "letslearn-terraform"
     key     = "vpn/state"
@@ -8,31 +10,32 @@ terraform {
 }
 
 provider "aws" {
-  region  = "eu-central-1"
-  version = "~> 2.3"
+  region  = "eu-west-3"
+  version = "~> 2.18"
 }
 
 module "vpn_server" {
   source        = "./base"
   domain_name   = "chomat.de"
-  instance_type = "t3.small"
-  key_name      = "frankfurt-kitchen"
+  instance_type = "t2.micro"
+  key_name      = "aws-eu-west-3"
   owner         = "letslearn"
 
-  vpc_id    = "${data.aws_vpc.tools.id}"
-  subnet_id = "${data.aws_subnet_ids.tools_public.ids[0]}"
+  vpc_id    = data.aws_vpc.tools.id
+  subnet_id = tolist(data.aws_subnet_ids.tools_public.ids)[0]
 }
 
 data "aws_vpc" "tools" {
-  tags {
+  tags = {
     Name = "tools"
   }
 }
 
 data "aws_subnet_ids" "tools_public" {
-  vpc_id = "${data.aws_vpc.tools.id}"
+  vpc_id = data.aws_vpc.tools.id
 
-  tags {
+  tags = {
     Type = "public"
   }
 }
+

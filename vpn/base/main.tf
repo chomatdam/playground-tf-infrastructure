@@ -3,29 +3,29 @@ locals {
 }
 
 data "template_file" "client_conf_template" {
-  template = "${file("${path.module}/files/client.ovpn")}"
+  template = file("${path.module}/files/client.ovpn")
 
-  vars {
-    domain_name = "${var.domain_name}"
+  vars = {
+    domain_name = var.domain_name
   }
 }
 
 resource "aws_s3_bucket_object" "client_conf" {
-  bucket  = "${local.cert_bucket_name}"
+  bucket  = aws_s3_bucket.certificates.bucket
   key     = "client.ovpn"
-  content = "${data.template_file.client_conf_template.rendered}"
+  content = data.template_file.client_conf_template.rendered
 }
 
 resource "aws_launch_configuration" "launch_configuration" {
-  depends_on = ["aws_s3_bucket.certificates"]
+  depends_on = [aws_s3_bucket.certificates]
 
   name_prefix                 = "${var.owner}-vpn-server"
-  image_id                    = "${data.aws_ami.amazon_linux.image_id}"
-  instance_type               = "${var.instance_type}"
-  user_data                   = "${data.template_cloudinit_config.cloudinit_template.rendered}"
-  iam_instance_profile        = "${aws_iam_instance_profile.vpn_instance_profile.name}"
-  key_name                    = "${var.key_name}"
-  security_groups             = ["${aws_security_group.vpn_sg.id}"]
+  image_id                    = data.aws_ami.amazon_linux.image_id
+  instance_type               = var.instance_type
+  user_data                   = data.template_cloudinit_config.cloudinit_template.rendered
+  iam_instance_profile        = aws_iam_instance_profile.vpn_instance_profile.name
+  key_name                    = var.key_name
+  security_groups             = [aws_security_group.vpn_sg.id]
   associate_public_ip_address = true
 
   lifecycle {
@@ -35,8 +35,8 @@ resource "aws_launch_configuration" "launch_configuration" {
 
 resource "aws_autoscaling_group" "vpn_asg" {
   name_prefix          = "${var.owner}-vpn-server"
-  launch_configuration = "${aws_launch_configuration.launch_configuration.name}"
-  vpc_zone_identifier  = ["${var.subnet_id}"]
+  launch_configuration = aws_launch_configuration.launch_configuration.name
+  vpc_zone_identifier  = [var.subnet_id]
   min_size             = 1
   max_size             = 1
 
@@ -53,7 +53,7 @@ resource "aws_autoscaling_group" "vpn_asg" {
 
 resource "aws_iam_instance_profile" "vpn_instance_profile" {
   name = "vpn-instance-profile"
-  role = "${aws_iam_role.vpn_iam_role.name}"
+  role = aws_iam_role.vpn_iam_role.name
 }
 
 resource "aws_iam_role" "vpn_iam_role" {
@@ -74,12 +74,13 @@ resource "aws_iam_role" "vpn_iam_role" {
     ]
 }
 EOF
+
 }
 
 resource "aws_iam_policy_attachment" "s3_access_policy_attachment" {
-  name       = "vpn-s3-access"
-  roles      = ["${aws_iam_role.vpn_iam_role.name}"]
-  policy_arn = "${aws_iam_policy.s3_access_policy.arn}"
+  name = "vpn-s3-access"
+  roles = [aws_iam_role.vpn_iam_role.name]
+  policy_arn = aws_iam_policy.s3_access_policy.arn
 }
 
 resource "aws_iam_policy" "s3_access_policy" {
@@ -100,18 +101,19 @@ resource "aws_iam_policy" "s3_access_policy" {
   ]
 }
 POLICY
+
 }
 
 resource "aws_iam_policy_attachment" "eip_association_policy_attachment" {
-  name       = "vpn-eip-association-access"
-  roles      = ["${aws_iam_role.vpn_iam_role.name}"]
-  policy_arn = "${aws_iam_policy.eip_association_policy.arn}"
+name       = "vpn-eip-association-access"
+roles      = [aws_iam_role.vpn_iam_role.name]
+policy_arn = aws_iam_policy.eip_association_policy.arn
 }
 
 resource "aws_iam_policy" "eip_association_policy" {
-  name = "vpn-eip-association-policy"
+name = "vpn-eip-association-policy"
 
-  policy = <<POLICY
+policy = <<POLICY
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -123,28 +125,29 @@ resource "aws_iam_policy" "eip_association_policy" {
   ]
 }
 POLICY
+
 }
 
 resource "aws_s3_bucket" "certificates_logs" {
-  bucket        = "${local.cert_bucket_name}-logs"
-  acl           = "log-delivery-write"
-  force_destroy = true
+bucket = "${local.cert_bucket_name}-logs"
+acl = "log-delivery-write"
+force_destroy = true
 }
 
 resource "aws_s3_bucket" "certificates" {
-  bucket = "${local.cert_bucket_name}"
-  acl    = "private"
+bucket = local.cert_bucket_name
+acl = "private"
 
-  logging {
-    target_bucket = "${aws_s3_bucket.certificates_logs.bucket}"
-    target_prefix = "logs/"
-  }
+logging {
+target_bucket = aws_s3_bucket.certificates_logs.bucket
+target_prefix = "logs/"
+}
 
-  tags {
-    Owner       = "${var.owner}"
-    Project     = "OpenVPN"
-    Environment = "${terraform.workspace}"
-  }
+tags = {
+Owner = var.owner
+Project = "OpenVPN"
+Environment = terraform.workspace
+}
 }
 
 //resource "aws_s3_bucket_policy" "cert_restricted_access" {
@@ -188,4 +191,3 @@ resource "aws_s3_bucket" "certificates" {
 //}
 //POLICY
 //}
-
